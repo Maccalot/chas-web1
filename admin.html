@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Tennis Portfolio</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: #fff; padding: 2rem; }
+    h1 { text-align: center; margin-bottom: 2rem; color: #e94560; }
+    .container { max-width: 800px; margin: 0 auto; }
+    .section { background: #0a0a0a; padding: 2rem; border-radius: 10px; margin-bottom: 2rem; }
+    .section h2 { margin-bottom: 1rem; color: #e94560; }
+    label { display: block; margin-bottom: 0.5rem; opacity: 0.7; }
+    input, textarea { width: 100%; padding: 0.8rem; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 5px; margin-bottom: 1rem; }
+    textarea { min-height: 100px; resize: vertical; }
+    button { background: #e94560; color: #fff; border: none; padding: 1rem 2rem; border-radius: 5px; cursor: pointer; font-size: 1rem; margin-right: 0.5rem; }
+    button:hover { background: #ff6b6b; }
+    .success { background: #28a745; padding: 1rem; border-radius: 5px; margin-bottom: 1rem; display: none; text-align: center; }
+    
+    .achievements-list { margin-bottom: 1rem; }
+    .achievement-item { background: #1a1a1a; padding: 1rem; border-radius: 5px; margin-bottom: 0.5rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    .achievement-item input { margin: 0; flex: 1; min-width: 100px; }
+    .achievement-item button { background: #dc3545; padding: 0.5rem 1rem; }
+    
+    .add-btn { background: #28a745; }
+    .danger-btn { background: #dc3545; }
+    
+    .gallery-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+    .gallery-item { position: relative; }
+    .gallery-item img { width: 100%; height: 150px; object-fit: cover; border-radius: 5px; }
+    .gallery-item button { position: absolute; top: 5px; right: 5px; background: #dc3545; padding: 0.3rem 0.8rem; }
+    
+    .back { text-align: center; margin-top: 2rem; }
+    .back a { color: #666; text-decoration: none; }
+    
+    .data-io { background: #0a0a0a; padding: 2rem; border-radius: 10px; margin-bottom: 2rem; }
+    .data-io textarea { font-family: monospace; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎾 Admin Panel - Tennis Portfolio</h1>
+    <div class="success" id="success">Changes saved successfully!</div>
+    
+    <!-- Data Import/Export -->
+    <div class="data-io">
+      <h2>💾 Backup & Restore</h2>
+      <p style="margin-bottom: 1rem; opacity: 0.7;">Copy this data to save. Paste data here and click Load to restore.</p>
+      <textarea id="data-json" rows="10"></textarea>
+      <button onclick="saveData()">💾 Save All</button>
+      <button onclick="loadData()" class="add-btn">📂 Load Data</button>
+      <button onclick="resetData()" class="danger-btn">🔄 Reset to Default</button>
+    </div>
+    
+    <!-- Hero Section -->
+    <div class="section">
+      <h2>Hero Section</h2>
+      <label>Title</label>
+      <input type="text" id="hero-title">
+      <label>Subtitle</label>
+      <input type="text" id="hero-subtitle">
+      <button onclick="saveSection('hero')">Save</button>
+    </div>
+    
+    <!-- About Section -->
+    <div class="section">
+      <h2>About Section</h2>
+      <label>Name</label>
+      <input type="text" id="about-name">
+      <label>Age</label>
+      <input type="text" id="about-age">
+      <label>Ranking</label>
+      <input type="text" id="about-ranking">
+      <label>Years Playing</label>
+      <input type="text" id="about-years">
+      <label>Bio</label>
+      <textarea id="about-bio"></textarea>
+      <button onclick="saveSection('about')">Save</button>
+    </div>
+    
+    <!-- Achievements Section -->
+    <div class="section">
+      <h2>Achievements</h2>
+      <div class="achievements-list" id="achievements-list"></div>
+      <button class="add-btn" onclick="addAchievement()">+ Add Achievement</button>
+      <button onclick="saveSection('achievements')" style="margin-top: 1rem;">Save</button>
+    </div>
+    
+    <!-- Gallery Section -->
+    <div class="section">
+      <h2>Gallery</h2>
+      <label>Add Image URL</label>
+      <div style="display: flex; gap: 1rem;">
+        <input type="text" id="gallery-url" placeholder="https://...">
+        <button onclick="addGalleryImage()">Add</button>
+      </div>
+      <div class="gallery-list" id="gallery-list"></div>
+    </div>
+    
+    <!-- Contact Section -->
+    <div class="section">
+      <h2>Contact Section</h2>
+      <label>Email</label>
+      <input type="email" id="contact-email">
+      <label>Instagram</label>
+      <input type="text" id="contact-instagram">
+      <label>Phone</label>
+      <input type="tel" id="contact-phone">
+      <button onclick="saveSection('contact')">Save</button>
+    </div>
+    
+    <div class="back">
+      <a href="/">← Back to Website</a>
+    </div>
+  </div>
+  
+  <script>
+    const STORAGE_KEY = 'tennis_portfolio_data';
+    
+    const defaultData = {
+      hero: { title: "Find Your Rhythm", subtitle: "We don't just play, we create champions" },
+      about: { name: "Your Name", age: "18", ranking: "National: #50", years: "12", bio: "Passionate tennis player dedicated to the sport since age 6." },
+      achievements: [
+        { year: "2024", title: "National Junior Championship", place: "Semi-finalist" },
+        { year: "2023", title: "Regional Tournament", place: "Winner" }
+      ],
+      gallery: [
+        "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=400",
+        "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=400"
+      ],
+      contact: { email: "player@email.com", instagram: "@tennisplayer", phone: "+45 12 34 56 78" }
+    };
+    
+    let data = {};
+    
+    function loadFromStorage() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        data = JSON.parse(saved);
+      } else {
+        data = JSON.parse(JSON.stringify(defaultData));
+      }
+    }
+    
+    function saveToStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      document.getElementById('data-json').value = JSON.stringify(data, null, 2);
+      showSuccess();
+    }
+    
+    function showSuccess() {
+      const el = document.getElementById('success');
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 3000);
+    }
+    
+    function populateForms() {
+      document.getElementById('hero-title').value = data.hero.title;
+      document.getElementById('hero-subtitle').value = data.hero.subtitle;
+      
+      document.getElementById('about-name').value = data.about.name;
+      document.getElementById('about-age').value = data.about.age;
+      document.getElementById('about-ranking').value = data.about.ranking;
+      document.getElementById('about-years').value = data.about.years;
+      document.getElementById('about-bio').value = data.about.bio;
+      
+      document.getElementById('contact-email').value = data.contact.email;
+      document.getElementById('contact-instagram').value = data.contact.instagram;
+      document.getElementById('contact-phone').value = data.contact.phone;
+      
+      document.getElementById('data-json').value = JSON.stringify(data, null, 2);
+      
+      renderAchievements();
+      renderGallery();
+    }
+    
+    function renderAchievements() {
+      const list = document.getElementById('achievements-list');
+      list.innerHTML = data.achievements.map((a, i) => `
+        <div class="achievement-item">
+          <input type="text" value="${a.year}" placeholder="Year" onchange="updateAchievement(${i}, 'year', this.value)">
+          <input type="text" value="${a.title}" placeholder="Title" onchange="updateAchievement(${i}, 'title', this.value)">
+          <input type="text" value="${a.place}" placeholder="Place" onchange="updateAchievement(${i}, 'place', this.value)">
+          <button onclick="removeAchievement(${i})">×</button>
+        </div>
+      `).join('');
+    }
+    
+    function updateAchievement(index, field, value) {
+      data.achievements[index][field] = value;
+    }
+    
+    function addAchievement() {
+      data.achievements.push({ year: '', title: '', place: '' });
+      renderAchievements();
+    }
+    
+    function removeAchievement(index) {
+      data.achievements.splice(index, 1);
+      renderAchievements();
+    }
+    
+    function renderGallery() {
+      const list = document.getElementById('gallery-list');
+      list.innerHTML = data.gallery.map((img, i) => `
+        <div class="gallery-item">
+          <img src="${img}" alt="Gallery">
+          <button onclick="removeGalleryImage(${i})">×</button>
+        </div>
+      `).join('');
+    }
+    
+    function addGalleryImage() {
+      const url = document.getElementById('gallery-url').value;
+      if (url) {
+        data.gallery.push(url);
+        document.getElementById('gallery-url').value = '';
+        renderGallery();
+      }
+    }
+    
+    function removeGalleryImage(index) {
+      data.gallery.splice(index, 1);
+      renderGallery();
+    }
+    
+    function saveSection(section) {
+      if (section === 'hero') {
+        data.hero.title = document.getElementById('hero-title').value;
+        data.hero.subtitle = document.getElementById('hero-subtitle').value;
+      } else if (section === 'about') {
+        data.about.name = document.getElementById('about-name').value;
+        data.about.age = document.getElementById('about-age').value;
+        data.about.ranking = document.getElementById('about-ranking').value;
+        data.about.years = document.getElementById('about-years').value;
+        data.about.bio = document.getElementById('about-bio').value;
+      } else if (section === 'contact') {
+        data.contact.email = document.getElementById('contact-email').value;
+        data.contact.instagram = document.getElementById('contact-instagram').value;
+        data.contact.phone = document.getElementById('contact-phone').value;
+      }
+      saveToStorage();
+    }
+    
+    function saveData() {
+      saveToStorage();
+    }
+    
+    function loadData() {
+      try {
+        const json = document.getElementById('data-json').value;
+        data = JSON.parse(json);
+        saveToStorage();
+        populateForms();
+        alert('Data loaded!');
+      } catch (e) {
+        alert('Invalid JSON!');
+      }
+    }
+    
+    function resetData() {
+      if (confirm('Reset to default data?')) {
+        data = JSON.parse(JSON.stringify(defaultData));
+        saveToStorage();
+        populateForms();
+      }
+    }
+    
+    // Load on start
+    loadFromStorage();
+    populateForms();
+  </script>
+</body>
+</html>
